@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 """ Place Module for HBNB project """
-import models
-from models.base_model import BaseModel, Base
-from models.amenity import Amenity
+from os import getenv
 from sqlalchemy import Column, String, Integer, Float, ForeignKey, Table
 from sqlalchemy.orm import relationship
+from models.base_model import BaseModel, Base
 
 
 place_amenity = Table(
@@ -31,33 +30,32 @@ class Place(BaseModel, Base):
     longitude = Column(Float, nullable=True)
     amenity_ids = []
 
-    if models.storage_t == 'db':
+    if getenv('HBNB_TYPE_STORAGE') == 'db':
         reviews = relationship(
             'Review', backref='place', cascade='all, delete-orphan')
         amenities = relationship(
-            'Amenity', secondary=place_amenity, viewonly=False)
+            'Amenity', secondary=place_amenity,
+            viewonly=False, backref='places')
     else:
         @property
         def reviews(self):
             """Return list of Review instances with place_id == self.id"""
+            from models import storage
             from models.review import Review
-            review_list = []
-            for review in models.storage.all(Review).values():
-                if review.place_id == self.id:
-                    review_list.append(review)
-            return review_list
+            return [r for r in storage.all(Review).values()
+                    if r.place_id == self.id]
 
         @property
         def amenities(self):
-            """Return list of Amenity instances based on amenity_ids"""
-            amenity_list = []
-            for amenity in models.storage.all(Amenity).values():
-                if amenity.id in self.amenity_ids:
-                    amenity_list.append(amenity)
-            return amenity_list
+            """Return list of Amenity instances linked to the Place"""
+            from models import storage
+            from models.amenity import Amenity
+            return [a for a in storage.all(Amenity).values()
+                    if a.id in self.amenity_ids]
 
         @amenities.setter
         def amenities(self, obj):
-            """Add an Amenity.id to amenity_ids"""
-            if isinstance(obj, Amenity):
+            """Add an Amenity.id to the amenity_ids list"""
+            from models.amenity import Amenity
+            if type(obj) is Amenity:
                 self.amenity_ids.append(obj.id)
