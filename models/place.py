@@ -31,15 +31,14 @@ class Place(BaseModel, Base):
     amenity_ids = []
 
     if getenv('HBNB_TYPE_STORAGE') == 'db':
-        reviews = relationship(
-            'Review', backref='place', cascade='all, delete-orphan')
-        amenities = relationship(
-            'Amenity', secondary=place_amenity,
-            viewonly=False, backref='places')
+        reviews = relationship('Review', backref='place',
+                               cascade='all, delete-orphan')
+        amenities = relationship('Amenity', secondary=place_amenity,
+                                 viewonly=False, backref='places')
     else:
         @property
         def reviews(self):
-            """Return list of Review instances with place_id == self.id"""
+            """Returns the list of Review instances with place_id == self.id"""
             from models import storage
             from models.review import Review
             return [r for r in storage.all(Review).values()
@@ -47,7 +46,7 @@ class Place(BaseModel, Base):
 
         @property
         def amenities(self):
-            """Return list of Amenity instances linked to the Place"""
+            """Returns the list of Amenity instances linked to the Place"""
             from models import storage
             from models.amenity import Amenity
             return [a for a in storage.all(Amenity).values()
@@ -55,7 +54,7 @@ class Place(BaseModel, Base):
 
         @amenities.setter
         def amenities(self, obj):
-            """Add an Amenity.id to the amenity_ids list"""
+            """Adds an Amenity.id to the amenity_ids list"""
             from models.amenity import Amenity
             if type(obj) is Amenity:
                 self.amenity_ids.append(obj.id)
