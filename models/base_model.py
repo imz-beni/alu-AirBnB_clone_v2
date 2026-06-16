@@ -30,7 +30,8 @@ class BaseModel:
                     kwargs['created_at'], '%Y-%m-%dT%H:%M:%S.%f')
             if '__class__' in kwargs:
                 del kwargs['__class__']
-            self.__dict__.update(kwargs)
+            for key, value in kwargs.items():
+                setattr(self, key, value)
             if 'id' not in kwargs:
                 self.id = str(uuid.uuid4())
             if 'created_at' not in kwargs:
