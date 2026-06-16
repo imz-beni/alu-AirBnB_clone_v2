@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 """ """
+import os
+import json
+import unittest
 from tests.test_models.test_base_model import test_basemodel
 from models.place import Place
 
@@ -12,6 +15,28 @@ class test_Place(test_basemodel):
         super().__init__(*args, **kwargs)
         self.name = "Place"
         self.value = Place
+
+    def test_save(self):
+        """ Testing save with required fields """
+        if os.getenv('HBNB_TYPE_STORAGE') == 'db':
+            from models.state import State
+            from models.city import City
+            from models.user import User
+            st = State(name="TestState")
+            st.save()
+            cy = City(name="TestCity", state_id=st.id)
+            cy.save()
+            us = User(email="p@p.com", password="pwd")
+            us.save()
+            i = self.value(city_id=cy.id, user_id=us.id, name="TestPlace")
+        else:
+            i = self.value()
+        i.save()
+        if os.getenv('HBNB_TYPE_STORAGE') != 'db':
+            key = self.name + "." + i.id
+            with open('file.json', 'r') as f:
+                j = json.load(f)
+                self.assertEqual(j[key], i.to_dict())
 
     def test_city_id(self):
         """ """
