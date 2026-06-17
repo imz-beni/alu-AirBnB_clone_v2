@@ -34,5 +34,7 @@ server {
 }
 NGINX_CONFIG
 
+ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
 service nginx restart
 exit 0
