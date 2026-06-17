@@ -7,14 +7,16 @@ apt-get -y install nginx
 mkdir -p /data/web_static/releases/test/
 mkdir -p /data/web_static/shared/
 
-printf '<html>\n  <head>\n  </head>\n  <body>\n    Holberton School\n  </body>\n</html>\n' > /data/web_static/releases/test/index.html
+printf '<html>\n  <head>\n  </head>\n  <body>\n    Holberton School\n  </body>\n</html>\n' \
+    > /data/web_static/releases/test/index.html
 
 rm -rf /data/web_static/current
 ln -s /data/web_static/releases/test/ /data/web_static/current
 
 chown -R ubuntu:ubuntu /data/
 
-printf %s "server {
+cat > /etc/nginx/sites-available/default << 'NGINX_CONFIG'
+server {
     listen 80 default_server;
     listen [::]:80 default_server;
     root /var/www/html;
@@ -27,9 +29,10 @@ printf %s "server {
     }
 
     location / {
-        try_files \$uri \$uri/ =404;
+        try_files $uri $uri/ =404;
     }
 }
-" > /etc/nginx/sites-available/default
+NGINX_CONFIG
 
 service nginx restart
+exit 0
