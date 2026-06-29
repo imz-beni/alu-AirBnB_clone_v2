@@ -2,30 +2,29 @@
 """Fabric script (based on the file 1-pack_web_static.py) that distributes
 an archive to the web servers, using the function do_deploy.
 """
-import os
 from os.path import exists
 from fabric.api import env, put, run
 
 env.hosts = ['3.82.176.167', '98.94.20.97']
 
-NGINX_CONF = """\
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    root /var/www/html;
-    index index.html index.htm;
-    server_name _;
-
-    location /hbnb_static/ {
-        alias /data/web_static/current/;
-        index index.html index.htm;
-    }
-
-    location / {
-        try_files $uri $uri/ =404;
-    }
-}
-"""
+NGINX_CONF = (
+    'server {\\n'
+    '    listen 80 default_server;\\n'
+    '    listen [::]:80 default_server;\\n'
+    '    root /var/www/html;\\n'
+    '    index index.html index.htm;\\n'
+    '    server_name _;\\n'
+    '\\n'
+    '    location /hbnb_static/ {\\n'
+    '        alias /data/web_static/current/;\\n'
+    '        index index.html index.htm;\\n'
+    '    }\\n'
+    '\\n'
+    '    location / {\\n'
+    '        try_files $uri $uri/ =404;\\n'
+    '    }\\n'
+    '}\\n'
+)
 
 
 def do_deploy(archive_path):
@@ -53,12 +52,12 @@ def do_deploy(archive_path):
         run('rm -rf /data/web_static/current')
         run('ln -s {}{}/ /data/web_static/current'.format(path, no_ext))
         run('sudo chmod -R 755 /data/web_static/')
-        tmp_conf = '/tmp/hbnb_nginx.conf'
-        with open(tmp_conf, 'w') as f:
-            f.write(NGINX_CONF)
-        put(tmp_conf, '/tmp/hbnb_nginx.conf')
-        os.remove(tmp_conf)
-        run('sudo mv /tmp/hbnb_nginx.conf /etc/nginx/sites-available/default')
+        run(
+            "printf '{}' | sudo tee"
+            " /etc/nginx/sites-available/default > /dev/null".format(
+                NGINX_CONF
+            )
+        )
         run(
             'sudo ln -sf /etc/nginx/sites-available/default'
             ' /etc/nginx/sites-enabled/default'
