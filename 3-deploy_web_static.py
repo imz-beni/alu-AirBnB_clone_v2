@@ -3,8 +3,9 @@
 and distributes an archive to the web servers, using the function deploy.
 """
 from datetime import datetime
-from fabric.api import env, local, put, run
+from io import StringIO
 from os.path import exists, isdir
+from fabric.api import env, local, put, run
 
 env.hosts = ['3.82.176.167', '98.94.20.97']
 
@@ -52,7 +53,27 @@ def do_deploy(archive_path):
         run('rm -rf {}{}/web_static'.format(path, no_ext))
         run('rm -rf /data/web_static/current')
         run('ln -s {}{}/ /data/web_static/current'.format(path, no_ext))
-        run('service nginx reload')
+        nginx_conf = (
+            'server {\n'
+            '    listen 80 default_server;\n'
+            '    listen [::]:80 default_server;\n'
+            '    root /var/www/html;\n'
+            '    index index.html index.htm;\n'
+            '    server_name _;\n\n'
+            '    location /hbnb_static/ {\n'
+            '        alias /data/web_static/current/;\n'
+            '        index index.html index.htm;\n'
+            '    }\n\n'
+            '    location / {\n'
+            '        try_files $uri $uri/ =404;\n'
+            '    }\n'
+            '}\n'
+        )
+        put(StringIO(nginx_conf), '/tmp/nginx_hbnb.conf')
+        run('sudo mv /tmp/nginx_hbnb.conf /etc/nginx/sites-available/default')
+        run('sudo ln -sf /etc/nginx/sites-available/default'
+            ' /etc/nginx/sites-enabled/default')
+        run('sudo service nginx restart')
         print("New version deployed!")
         return True
     except Exception:
