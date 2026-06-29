@@ -2,11 +2,30 @@
 """Fabric script (based on the file 1-pack_web_static.py) that distributes
 an archive to the web servers, using the function do_deploy.
 """
+import os
 from os.path import exists
 from fabric.api import env, put, run
-from io import BytesIO
 
 env.hosts = ['3.82.176.167', '98.94.20.97']
+
+NGINX_CONF = """\
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    root /var/www/html;
+    index index.html index.htm;
+    server_name _;
+
+    location /hbnb_static/ {
+        alias /data/web_static/current/;
+        index index.html index.htm;
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+"""
 
 
 def do_deploy(archive_path):
@@ -33,26 +52,17 @@ def do_deploy(archive_path):
         run('rm -rf {}{}/web_static'.format(path, no_ext))
         run('rm -rf /data/web_static/current')
         run('ln -s {}{}/ /data/web_static/current'.format(path, no_ext))
-        nginx_conf = (
-            b'server {\n'
-            b'    listen 80 default_server;\n'
-            b'    listen [::]:80 default_server;\n'
-            b'    root /var/www/html;\n'
-            b'    index index.html index.htm;\n'
-            b'    server_name _;\n\n'
-            b'    location /hbnb_static/ {\n'
-            b'        alias /data/web_static/current/;\n'
-            b'        index index.html index.htm;\n'
-            b'    }\n\n'
-            b'    location / {\n'
-            b'        try_files $uri $uri/ =404;\n'
-            b'    }\n'
-            b'}\n'
+        run('sudo chmod -R 755 /data/web_static/')
+        tmp_conf = '/tmp/hbnb_nginx.conf'
+        with open(tmp_conf, 'w') as f:
+            f.write(NGINX_CONF)
+        put(tmp_conf, '/tmp/hbnb_nginx.conf')
+        os.remove(tmp_conf)
+        run('sudo mv /tmp/hbnb_nginx.conf /etc/nginx/sites-available/default')
+        run(
+            'sudo ln -sf /etc/nginx/sites-available/default'
+            ' /etc/nginx/sites-enabled/default'
         )
-        put(BytesIO(nginx_conf), '/tmp/nginx_hbnb.conf')
-        run('sudo mv /tmp/nginx_hbnb.conf /etc/nginx/sites-available/default')
-        run('sudo ln -sf /etc/nginx/sites-available/default'
-            ' /etc/nginx/sites-enabled/default')
         run('sudo service nginx restart')
         print("New version deployed!")
         return True
