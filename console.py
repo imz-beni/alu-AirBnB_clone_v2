@@ -127,24 +127,23 @@ class HBNBCommand(cmd.Cmd):
         if not args:
             print("** class name missing **")
             return
-        tokens = args.split(' ')
+        tokens = args.split()
         cls_name = tokens[0]
         if cls_name not in HBNBCommand.classes:
             print("** class doesn't exist **")
             return
 
-        params = {}
+        new_instance = HBNBCommand.classes[cls_name]()
         for token in tokens[1:]:
             if '=' not in token:
                 continue
-            key, _, value = token.partition('=')
+            key, value = token.split('=', 1)
             if not key or not value:
                 continue
             parsed = self._parse_value(value)
             if parsed is not None:
-                params[key] = parsed
+                setattr(new_instance, key, parsed)
 
-        new_instance = HBNBCommand.classes[cls_name](**params)
         new_instance.save()
         print(new_instance.id)
 
@@ -154,13 +153,13 @@ class HBNBCommand(cmd.Cmd):
 
         Returns the parsed value, or None if the token is invalid.
         """
-        if value[0] == '"':
-            if len(value) < 2 or value[-1] != '"':
+        if value.startswith('"'):
+            if len(value) < 2 or not value.endswith('"'):
                 return None
-            value = value[1:-1]
-            value = value.replace('\\"', '"')
-            value = value.replace('_', ' ')
-            return value
+            inner = value[1:-1]
+            inner = inner.replace('\\"', '"')
+            inner = inner.replace('_', ' ')
+            return inner
         if '.' in value:
             try:
                 return float(value)
