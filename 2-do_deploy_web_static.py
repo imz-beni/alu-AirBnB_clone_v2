@@ -4,7 +4,7 @@ an archive to the web servers, using the function do_deploy.
 """
 from os.path import exists
 from fabric.api import env, put, run
-from io import StringIO
+from io import BytesIO
 
 env.hosts = ['3.82.176.167', '98.94.20.97']
 
@@ -34,22 +34,22 @@ def do_deploy(archive_path):
         run('rm -rf /data/web_static/current')
         run('ln -s {}{}/ /data/web_static/current'.format(path, no_ext))
         nginx_conf = (
-            'server {\n'
-            '    listen 80 default_server;\n'
-            '    listen [::]:80 default_server;\n'
-            '    root /var/www/html;\n'
-            '    index index.html index.htm;\n'
-            '    server_name _;\n\n'
-            '    location /hbnb_static/ {\n'
-            '        alias /data/web_static/current/;\n'
-            '        index index.html index.htm;\n'
-            '    }\n\n'
-            '    location / {\n'
-            '        try_files $uri $uri/ =404;\n'
-            '    }\n'
-            '}\n'
+            b'server {\n'
+            b'    listen 80 default_server;\n'
+            b'    listen [::]:80 default_server;\n'
+            b'    root /var/www/html;\n'
+            b'    index index.html index.htm;\n'
+            b'    server_name _;\n\n'
+            b'    location /hbnb_static/ {\n'
+            b'        alias /data/web_static/current/;\n'
+            b'        index index.html index.htm;\n'
+            b'    }\n\n'
+            b'    location / {\n'
+            b'        try_files $uri $uri/ =404;\n'
+            b'    }\n'
+            b'}\n'
         )
-        put(StringIO(nginx_conf), '/tmp/nginx_hbnb.conf')
+        put(BytesIO(nginx_conf), '/tmp/nginx_hbnb.conf')
         run('sudo mv /tmp/nginx_hbnb.conf /etc/nginx/sites-available/default')
         run('sudo ln -sf /etc/nginx/sites-available/default'
             ' /etc/nginx/sites-enabled/default')
